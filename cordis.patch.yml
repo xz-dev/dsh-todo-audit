@@ -1,0 +1,27 @@
+# dsh-todo-audit bundle patch.
+# Rows inserted with defaults matching the user's Pi setup
+# (~/.pi/agent/jev-todo-audit.json: apiKey only -> all tuning defaults).
+# The audit reads its TypeSafe key from TYPESAFE_API_KEY (or the `apiKey`
+# config field, kept out of this committed file on purpose).
+- insert:
+    - id: todo-audit
+      name: "dsh-todo-audit"
+      config:
+        todo:
+          enabled: true
+          # Mirror the todo/write panel snapshot into the dsh-tui goal/todo panel.
+          panelMirror: true
+        audit:
+          enabled: true
+          interval: 10
+          cooldownLoops: 10
+          confidenceThreshold: 0.5
+          model: jev-latest
+          apiKeyEnvVar: TYPESAFE_API_KEY
+          apiUrl: https://api.typesafe.ai/v1/systemone
+          timeoutMs: 30000
+          notifyOnAligned: false
+          staleAuditSpans: 3
+          # Pi settings.retry: enabled, maxRetries 10, baseDelayMs 2000.
+          maxRetries: 10
+          baseDelayMs: 2000
