@@ -1,15 +1,14 @@
 /**
- * Audit config. Defaults match the user's Pi setup
- * (~/.pi/agent/jev-todo-audit.json sets only apiKey; settings.retry
- * maxRetries 10, baseDelayMs default 2000).
+ * Audit config. Defaults: jev-latest, interval 10, cooldown 10, retry
+ * maxRetries 10 / baseDelayMs 2000.
  *
- * Key order: env (TYPESAFE_API_KEY) wins, then cordis `apiKey`, then the
- * Pi global file. The file is read at runtime and never logged.
+ * Key order: the DSH credentials service (`apiKeyEnvVar`, default
+ * TYPESAFE_API_KEY; it layers the launch environment over
+ * $DSH_HOME/.credentials.yaml), then the process environment when no
+ * credentials service exists, then cordis `apiKey`. Never logged.
  */
 
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { credentialRef } from "@deepseek-ai/dsh-credentials";
 
 export const DEFAULT_AUDIT = {
 	enabled: true,
@@ -51,27 +50,22 @@ export function resolveAuditConfig(input = {}) {
 		maxRetries: num(input.maxRetries, d.maxRetries, 0),
 		baseDelayMs: num(input.baseDelayMs, d.baseDelayMs, 0),
 		activityBudgetChars: typeof input.activityBudgetChars === "number" ? input.activityBudgetChars : undefined,
-		// ponytail: no trusted-project layer. Pi only merges <cwd>/.pi/jev-todo-audit.json when isProjectTrusted().
-		readPiKeyFile: input.readPiKeyFile !== false,
 	};
 }
 
-/** Pi global key file. Blank/missing/malformed → undefined. Never throws. */
-export function readPiApiKey(env = process.env) {
-	const dir = env.PI_CODING_AGENT_DIR?.trim() || join(homedir(), ".pi", "agent");
-	try {
-		const raw = JSON.parse(readFileSync(join(dir, "jev-todo-audit.json"), "utf8"));
-		return str(raw?.apiKey);
-	} catch {
-		return undefined;
+/**
+ * @param cfg resolved audit config
+ * @param credentials `ctx.get("credentials")`, or undefined outside a DSH host
+ * @param env process environment, used only without a credentials service
+ */
+export async function resolveApiKey(cfg, credentials, env = process.env) {
+	if (credentials) {
+		const hit = await credentials.resolve(credentialRef(cfg.apiKeyEnvVar));
+		const stored = str(hit?.value);
+		if (stored) return stored;
+	} else {
+		const fromEnv = str(env[cfg.apiKeyEnvVar]);
+		if (fromEnv) return fromEnv;
 	}
-}
-
-/** Env wins over cordis config, then the Pi file. */
-export function resolveApiKey(cfg, env = process.env) {
-	const fromEnv = str(env[cfg.apiKeyEnvVar]);
-	if (fromEnv) return fromEnv;
-	if (cfg.apiKey) return cfg.apiKey;
-	if (cfg.readPiKeyFile) return readPiApiKey(env);
-	return undefined;
+	return cfg.apiKey;
 }

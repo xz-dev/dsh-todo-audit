@@ -214,14 +214,17 @@ test("/todos groups like Pi and the panel mirror drops tombstones", () => {
 	assert.equal(writes[0].data.todos[0].content.trim(), writes[0].data.todos[0].content);
 });
 
-test("config defaults match the Pi file and env beats a file key", () => {
+test("config defaults and key order: credentials, env without service, config", async () => {
 	const cfg = resolveAuditConfig({});
 	assert.equal(cfg.interval, 10);
 	assert.equal(cfg.cooldownLoops, 10);
 	assert.equal(cfg.maxRetries, 10);
 	assert.equal(cfg.model, "jev-latest");
-	const key = resolveApiKey({ ...cfg, apiKey: "file-key", readPiKeyFile: false }, { TYPESAFE_API_KEY: " env-key " });
-	assert.equal(key, "env-key");
+	assert.equal(await resolveApiKey({ ...cfg, apiKey: "cfg-key" }, undefined, { TYPESAFE_API_KEY: " env-key " }), "env-key");
+	assert.equal(await resolveApiKey({ ...cfg, apiKey: "cfg-key" }, undefined, {}), "cfg-key");
+	const creds = { resolve: async (ref) => (ref === "TYPESAFE_API_KEY" ? { value: "stored" } : undefined) };
+	assert.equal(await resolveApiKey(cfg, creds, { TYPESAFE_API_KEY: "ignored" }), "stored");
+	assert.equal(await resolveApiKey(cfg, { resolve: async () => undefined }, {}), undefined);
 	assert.equal(parseUserReady({ stopKind: "AI_UNLOCK", reason: "done" }).stopKind, "AI_UNLOCK");
 	assert.equal(parseUserReady({ stopKind: "HUMAN_ABORT" }), undefined);
 });

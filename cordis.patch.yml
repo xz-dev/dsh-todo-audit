@@ -1,7 +1,6 @@
 # dsh-todo-audit bundle patch.
-# Rows inserted with defaults matching the user's Pi setup
-# (~/.pi/agent/jev-todo-audit.json: apiKey only -> all tuning defaults).
-# The audit reads its TypeSafe key from TYPESAFE_API_KEY (or the `apiKey`
+# Rows inserted with the audit defaults.
+# The TypeSafe key is the DSH credentials ref TYPESAFE_API_KEY (or the `apiKey`
 # config field, kept out of this committed file on purpose).
 - insert:
     - id: todo-audit

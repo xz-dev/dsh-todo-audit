@@ -108,11 +108,12 @@ export function apply(ctx, config = {}) {
 		if (!auditCfg.enabled || !agent?.session) return "skipped";
 		const id = agent.session.id ?? agent.id;
 		if (flight.has(id)) return "in-flight";
-		const apiKey = resolveApiKey(auditCfg);
+		const apiKey = await resolveApiKey(auditCfg, ctx.get("credentials"));
+		if (flight.has(id)) return "in-flight";
 		if (!apiKey) {
 			if (!warnedKey) {
 				warnedKey = true;
-				log("warn", `[jev-todo-audit] no API key: set ${auditCfg.apiKeyEnvVar} or apiKey (Pi jev-todo-audit.json is read when present)`);
+				log("warn", `[jev-todo-audit] no API key: set ${auditCfg.apiKeyEnvVar} in DSH credentials`);
 			}
 			return "no-key";
 		}
@@ -227,9 +228,12 @@ export function apply(ctx, config = {}) {
 		lastStopKey.delete(agent.id);
 		pendingStop.delete(agent.id);
 		try { restoreKeys(agent.session); } catch { /* session not readable yet */ }
-		if (!resolveApiKey(auditCfg) && !warnedKey) {
-			warnedKey = true;
-			log("warn", `[jev-todo-audit] no API key: set ${auditCfg.apiKeyEnvVar} or apiKey (Pi jev-todo-audit.json is read when present)`);
+		if (!warnedKey) {
+			void resolveApiKey(auditCfg, ctx.get("credentials")).then((key) => {
+				if (key || warnedKey) return;
+				warnedKey = true;
+				log("warn", `[jev-todo-audit] no API key: set ${auditCfg.apiKeyEnvVar} in DSH credentials`);
+			}, () => {});
 		}
 	});
 

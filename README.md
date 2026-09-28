@@ -18,7 +18,7 @@ node ~/.local/share/dsh/npm/node_modules/@deepseek-ai/dsh/lib/bin.js \
 
 The package `cordis.patch.yml` inserts plugin id `todo-audit`. Keep built-in `tool-todo` disabled.
 
-API key: `TYPESAFE_API_KEY`, or cordis `audit.apiKey`, or the existing `~/.pi/agent/jev-todo-audit.json` `apiKey` (read at runtime, never logged). Same defaults as that file: interval 10, cooldown 10, model `jev-latest`, retries 10 × 2000ms.
+API key: `TYPESAFE_API_KEY` through the DSH credentials service (`$DSH_HOME/.credentials.yaml`, launch environment, or `.env`), or cordis `audit.apiKey` as a last resort. Never logged. Defaults: interval 10, cooldown 10, confidence 0.5, model `jev-latest`, retry 10 / 2000 ms.
 
 ## Commands
 
